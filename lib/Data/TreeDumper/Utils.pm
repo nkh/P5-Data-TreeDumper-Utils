@@ -93,27 +93,43 @@ sub first_nsort_last_filter ## no critic Subroutines::ProhibitManyArgs
 This filter will apply to all hashes and object derived from hashes, it allows you to change the order in
 which the keys are rendered.
 
-  print DumpTree
-    (
-    $structure,
-    'Structure:',
-    
-    # force specific keys to be rendered last
-    FILTER => \&first_nsort_last_filter,
-    FILTER_ARGUMENT =>
-      {
-      AT_START => ['ZZZ'],
-      AT_END => [qr/AB/],
-      },
-    ) ;
+  my $dump = DumpTree
+		(
+		{
+		AXC => 1,
+		ZZZ =>  1,
+		A => 1,
+		B2 => 1,
+		B => 1,
+		REMOVE => 1,
+		EVOMER => 1,
+		C => 1,
+		D => 1,
+		E => 1,
+		},
+		'structure:',
+
+		FILTER => \&first_nsort_last_filter,
+		FILTER_ARGUMENT =>
+			{
+			REMOVE => ['REMOVE', qr/EVO/],
+			AT_START_FIXED => ['ZZZ', qr/B/],
+			AT_START => ['ZZZ'], # already taken by AT_START_FIXED
+			AT_END => ['C', 'A'],
+			AT_END_FIXED => [qr/AX/],
+			},
+		) ;
 
 generates:
-
-  Structure:
-  |- ZZZ = 1  
-  |- A = 1  
-  |- B = 1  
-  `- ABC = 1  
+  structure:
+  |- ZZZ = 1  [S1]
+  |- B = 1  [S2]
+  |- B2 = 1  [S3]
+  |- D = 1  [S4]
+  |- E = 1  [S5]
+  |- A = 1  [S6]
+  |- C = 1  [S7]
+  `- AXC = 1  [S8]
 
 B<Arguments>
 
@@ -125,9 +141,15 @@ sorted in the category in which the matching regex or string was declared. The c
 
 =over 2 
 
-=item * AT_START - the keys that should be rendered first
+=item * REMOVE - the keys that should not be rendered
 
-=item * AT_END - the keys that should be rendered last
+=item * AT_START_FIXED - the keys that should be rendered at the start, will not be sorted
+
+=item * AT_START - the keys that should be rendered next, will be sorted
+
+=item * AT_END - the keys that should be rendered last, will be sorted
+
+=item * AT_END_FIXED - the keys that should be rendered at the end, will not be sorted
 
 =item * non categorized - the keys that are rendered between B<AT_START> and B<AT_END>. Any key that doesn't match
 a regex or a string will automatically be in this category
@@ -173,6 +195,8 @@ B<Arguments>
 
 =over 2 
 
+=item * REMOVE - a reference to an array containing regexes or strings, keys matching will be removed from display
+
 =item * AT_START_FIXED - a reference to an array containing regexes or strings, won't be sorted, multiple matches to regex are sorted
 
 =item * AT_START - a reference to an array containing regexes or strings, will be sorted
@@ -191,20 +215,29 @@ B<Returns> - the sorted keys
 
 my (%argument_hash) = @_ ;
 
-my @at_start_fixed = map { {regexp => $_} }  @{ $argument_hash{AT_START_FIXED}} if exists $argument_hash{AT_START_FIXED} ;
+my @keys =@{ $argument_hash{KEYS} || []} ;
+ 
+if(exists $argument_hash{REMOVE})
+	{
+	my @remove_regex = map { {regexp => $_} }  @{ $argument_hash{REMOVE}} ;
+	@keys = grep {! match_regexes($_, @remove_regex)} @keys ;
+	}
+
+
+my @at_start_fixed = map { {regexp => $_} }  @{ $argument_hash{AT_START_FIXED} } if exists $argument_hash{AT_START_FIXED} ;
 
 my %at_start = (regexp => q{matches at start}, matches => []) ;
-my @at_start = map { {regexp => $_, matches => $at_start{matches} } } @{$argument_hash{AT_START}} if exists $argument_hash{AT_START} ;
+my @at_start = map { {regexp => $_, matches => $at_start{matches} } } @{ $argument_hash{AT_START} } if exists $argument_hash{AT_START} ;
 
 my %in_the_middle = (regexp => q{matches what's left"}, matches => []) ;
 
 my %at_end = (regexp => q{matches at end}, matches => []) ;
-my @at_end = map { {regexp => $_, matches => $at_end{matches} } } @{$argument_hash{AT_END}} if exists $argument_hash{AT_END} ;
+my @at_end = map { {regexp => $_, matches => $at_end{matches} } } @{ $argument_hash{AT_END} } if exists $argument_hash{AT_END} ;
 
-my @at_end_fixed = map { {regexp => $_} }  @{ $argument_hash{AT_END_FIXED}} if exists $argument_hash{AT_END_FIXED} ;
+my @at_end_fixed = map { {regexp => $_} }  @{ $argument_hash{AT_END_FIXED} } if exists $argument_hash{AT_END_FIXED} ;
 
 
-for my $key (@{ $argument_hash{KEYS} || []})
+for my $key (@keys)
 	{
 	match_regexes($key, @at_start_fixed, @at_start, @at_end, @at_end_fixed) || push @{$in_the_middle{matches}}, $key ;
 	}

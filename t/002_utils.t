@@ -58,6 +58,8 @@ my $dump = DumpTree
 			A => 1,
 			B2 => 1,
 			B => 1,
+			REMOVE => 1,
+			EVOMER => 1,
 			C => 1,
 			D => 1,
 			E => 1,
@@ -67,6 +69,7 @@ my $dump = DumpTree
 			FILTER => \&first_nsort_last_filter,
 			FILTER_ARGUMENT =>
 				{
+				REMOVE => ['REMOVE', qr/EVO/],
 				AT_START_FIXED => ['ZZZ', qr/B/],
 				AT_START => ['ZZZ'], # already taken by AT_START_FIXED
 				AT_END => ['C', 'A'],
@@ -216,19 +219,19 @@ Stack dump:
 |- 0 
 |  `- main::s1 
 |     |- ARGS (no elements) 
-|     |- AT = t/002_utils.t:212 
+|     |- AT = t/002_utils.t:215 
 |     |- CALLERS_PACKAGE = main 
 |     `- CONTEXT = scalar 
 |- 1 
 |  `- (eval) 
-|     |- AT = t/002_utils.t:208 
+|     |- AT = t/002_utils.t:211 
 |     |- CALLERS_PACKAGE = main 
 |     |- CONTEXT = scalar 
 |     `- EVAL = yes 
 |- 2 
 |  `- main::s2 
 |     |- ARGS (no elements) 
-|     |- AT = t/002_utils.t:208 
+|     |- AT = t/002_utils.t:211 
 |     |- CALLERS_PACKAGE = xxx 
 |     `- CONTEXT = scalar 
 `- 3 
@@ -239,7 +242,7 @@ Stack dump:
       |     |- 0 = 1 
       |     |- 1 = 2 
       |     `- 2 = 3 
-      |- AT = t/002_utils.t:209 
+      |- AT = t/002_utils.t:212 
       |- CALLERS_PACKAGE = main 
       `- CONTEXT = scalar 
 EOD
