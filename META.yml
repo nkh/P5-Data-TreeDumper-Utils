@@ -1,0 +1,31 @@
+---
+name: Data-TreeDumper-Utils
+version: 0.03.7
+author:
+  - 'Nadim ibn hamouda el Khemir. <nkh@cpan.org>'
+abstract: A selection of utilities to use with Data::TreeDumper
+license: perl
+resources:
+  license: http://dev.perl.org/licenses/
+requires:
+  Check::ISA: 0
+  Data::TreeDumper: 0.35
+  Readonly: 0
+  Sort::Naturally: 0
+  Sub::Exporter: 0
+  Sub::Uplevel: 0.2
+  Tie::IxHash: 0
+build_requires:
+  Test::Block: 0
+  Test::Exception: 0
+  Test::NoWarnings: 0
+  Test::Warn: 0
+  Text::Diff: 0
+provides:
+  Data::TreeDumper::Utils:
+    file: lib/Data/TreeDumper/Utils.pm
+    version: 0.03
+generated_by: Module::Build version 0.2808
+meta-spec:
+  url: http://module-build.sourceforge.net/META-spec-v1.2.html
+  version: 1.2
