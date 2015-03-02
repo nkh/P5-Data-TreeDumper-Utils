@@ -9,10 +9,10 @@ BEGIN
 {
 use Sub::Exporter -setup => 
 	{
-	exports => [ qw(first_nsort_last_filter no_sort_filter hash_keys_sorter filter_class_keys get_caller_stack) ],
+	exports => [ qw(first_nsort_last_filter keys_order no_sort_filter hash_keys_sorter filter_class_keys get_caller_stack) ],
 	groups  => 
 		{
-		all  => [ qw(first_nsort_last_filter no_sort_filter hash_keys_sorter filter_class_keys get_caller_stack) ],
+		all  => [ qw(first_nsort_last_filter keys_order no_sort_filter hash_keys_sorter filter_class_keys get_caller_stack) ],
 		}
 	};
 	
@@ -46,6 +46,13 @@ Data::TreeDumper::Utils - A selection of utilities to use with Data::TreeDumper
     FILTER_ARGUMENT => {...},
     ) ;
   
+  DumpTree #shorthand for the call to first_nsort_last_filter
+    (
+    $requirements_structure,
+    'Requirements structure:',
+    keys_order(...),
+    ) ;
+  
   DumpTree
     (
     $ixhash_hash_ref,
@@ -77,7 +84,7 @@ Data::TreeDumper::Utils - A selection of utilities to use with Data::TreeDumper
 =head1 DESCRIPTION
 
 A collection useful sorting filters and utilities that can be used with L<Data::TreeDumper>. You can also
-study the source if you examples of how to write filters.
+study the source for examples of how to write filters.
 
 =head1 SUBROUTINES/METHODS
 
@@ -151,12 +158,11 @@ sorted in the category in which the matching regex or string was declared. The c
 
 =item * AT_END_FIXED - the keys that should be rendered at the end, will not be sorted
 
-=item * non categorized - the keys that are rendered between B<AT_START> and B<AT_END>. Any key that doesn't match
-a regex or a string will automatically be in this category
-
 =back
 
-Note that if multiple keys belong to a category, they will be sorted by L<Sort::Naturally>.
+Any key that doesn't match a regex or a string will automatically be in this category.
+
+Keys are sorted by L<Sort::Naturally>.
 
 B<Returns> - the keys sorted according to the defined categories.
 
@@ -184,10 +190,26 @@ if('HASH' eq ref $structure || obj($structure, 'HASH'))
 return(Data::TreeDumper::DefaultNodesToDisplay($structure)) ;
 }
 
+sub keys_order
+{
+
+=head2 keys_order(@filtering_categories)ma
+
+See L<first_nsort_last_filter()>
+
+  DumpTree($structure, 'title:', keys_order(REMOVE => [], AT_START => [], ...)) ;
+  
+=cut
+
+return
+	FILTER => \&first_nsort_last_filter,
+	FILTER_ARGUMENT => { @_ } ;
+}
+
 sub first_nsort_last
 {
 
-=head2 [p] first_nsort_last(AT_START => [regex, string, ...], AT_END => [regex, string, ...], DATA => [keys to sort] )
+=head2 [p] first_nsort_last(AT_START => [regex, string, ...], AT_END => [regex, string, ...], ..., KEYS => [keys to sort] )
 
 Implementation of I<first_nsort_last_filter> key sorting.
 
@@ -226,21 +248,17 @@ if(exists $argument_hash{REMOVE})
 
 my @at_start_fixed = map { {regexp => $_} }  @{ $argument_hash{AT_START_FIXED} } if exists $argument_hash{AT_START_FIXED} ;
 
-my %at_start = (regexp => q{matches at start}, matches => []) ;
-my @at_start = map { {regexp => $_, matches => $at_start{matches} } } @{ $argument_hash{AT_START} } if exists $argument_hash{AT_START} ;
+my $at_start_matches = [] ; #all the matches must be in the same array so we can do an nsort on them
+my @at_start = map { {regexp => $_, matches => $at_start_matches } } @{ $argument_hash{AT_START} } if exists $argument_hash{AT_START} ;
 
-my %in_the_middle = (regexp => q{matches what's left"}, matches => []) ;
-
-my %at_end = (regexp => q{matches at end}, matches => []) ;
-my @at_end = map { {regexp => $_, matches => $at_end{matches} } } @{ $argument_hash{AT_END} } if exists $argument_hash{AT_END} ;
+my $at_end_matches = [] ;
+my @at_end = map { {regexp => $_, matches => $at_end_matches } } @{ $argument_hash{AT_END} } if exists $argument_hash{AT_END} ;
 
 my @at_end_fixed = map { {regexp => $_} }  @{ $argument_hash{AT_END_FIXED} } if exists $argument_hash{AT_END_FIXED} ;
 
+my @in_the_middle = {regexp => qr//} ; # matches everything that the other have not
 
-for my $key (@keys)
-	{
-	match_regexes($key, @at_start_fixed, @at_start, @at_end, @at_end_fixed) || push @{$in_the_middle{matches}}, $key ;
-	}
+match_regexes($_, @at_start_fixed, @at_start, @at_end, @at_end_fixed, @in_the_middle) for(@keys) ;
 
 return
 	map
@@ -249,12 +267,30 @@ return
 			nsort( @{ $_->{matches} } )  :
 			() ;
 		}
-		@at_start_fixed, \%at_start, \%in_the_middle, \%at_end, @at_end_fixed ;	
+		@at_start_fixed, { matches => $at_start_matches }, @in_the_middle, { matches => $at_end_matches }, @at_end_fixed ;	
 }
 
 
 sub match_regexes
 {
+=head2 [p] match_regexes($key, @regexes)
+
+matches the key to a set of filterring regexps
+
+B<Arguments>
+
+=over 2 
+
+=item * $key - a string, the hash key to be matched to the sorting regexes
+
+=item * @regexes - an array, each element contains a Regexp or a stig to match to I<$key>, matches are added to the regexp element
+
+=back
+
+B<Returns> - the sorted keys
+
+=cut
+
 my ($key, @regexes) = @_ ;
 
 my $match ;

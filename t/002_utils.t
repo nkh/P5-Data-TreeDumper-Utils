@@ -93,6 +93,50 @@ is($dump, $expected_dump, 'first_nsort_last_filter') ;
 }
 
 {
+local $Plan = {'keys_order' => 1} ;
+
+my $dump = DumpTree
+			(
+			{
+			AXC => 1,
+			ZZZ =>  1,
+			A => 1,
+			B2 => 1,
+			B => 1,
+			REMOVE => 1,
+			EVOMER => 1,
+			C => 1,
+			D => 1,
+			E => 1,
+			},
+			'structure:',
+
+  			keys_order
+				(
+				REMOVE => ['REMOVE', qr/EVO/],
+				AT_START_FIXED => ['ZZZ', qr/B/],
+				AT_START => ['ZZZ'], # already taken by AT_START_FIXED
+				AT_END => ['C', 'A'],
+				AT_END_FIXED => [qr/AX/],
+				),
+			) ;
+
+my $expected_dump = <<EOD ;
+structure:
+|- ZZZ = 1  [S1]
+|- B = 1  [S2]
+|- B2 = 1  [S3]
+|- D = 1  [S4]
+|- E = 1  [S5]
+|- A = 1  [S6]
+|- C = 1  [S7]
+`- AXC = 1  [S8]
+EOD
+
+is($dump, $expected_dump, 'keys_order') ;
+}
+
+{
 local $Plan = {'no_sort_filter' => 1} ;
 
 use Tie::IxHash ;
@@ -219,19 +263,19 @@ Stack dump:
 |- 0 
 |  `- main::s1 
 |     |- ARGS (no elements) 
-|     |- AT = t/002_utils.t:215 
+|     |- AT = t/002_utils.t:259 
 |     |- CALLERS_PACKAGE = main 
 |     `- CONTEXT = scalar 
 |- 1 
 |  `- (eval) 
-|     |- AT = t/002_utils.t:211 
+|     |- AT = t/002_utils.t:255 
 |     |- CALLERS_PACKAGE = main 
 |     |- CONTEXT = scalar 
 |     `- EVAL = yes 
 |- 2 
 |  `- main::s2 
 |     |- ARGS (no elements) 
-|     |- AT = t/002_utils.t:211 
+|     |- AT = t/002_utils.t:255 
 |     |- CALLERS_PACKAGE = xxx 
 |     `- CONTEXT = scalar 
 `- 3 
@@ -242,7 +286,7 @@ Stack dump:
       |     |- 0 = 1 
       |     |- 1 = 2 
       |     `- 2 = 3 
-      |- AT = t/002_utils.t:212 
+      |- AT = t/002_utils.t:256 
       |- CALLERS_PACKAGE = main 
       `- CONTEXT = scalar 
 EOD
