@@ -21,3 +21,4 @@ xt/author/000_pod.t
 xt/author/000_pod_coverage.t
 xt/author/000_perl_critic.t
 xt/author/perlcriticrc
+META.json

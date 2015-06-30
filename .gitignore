@@ -1,0 +1,10 @@
+*.directory
+MYMETA.json
+MYMETA.yml
+*.tar.gz
+Build
+_build/
+blib/
+Changes
+html/
+
